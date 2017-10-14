@@ -37,10 +37,10 @@ Create a ticket!
 
 You should see something like the following appear in your Slack channel:
 
-![slack](https://user-images.githubusercontent.com/5077391/31570760-2a5bec20-b0d3-11e7-9429-c25e8cdcf328.png)
+![slack-new-ticket](https://user-images.githubusercontent.com/5077391/31571958-b59106a4-b0e7-11e7-93ce-ce930e7ed0b1.png)
 
 When a user replies, you'll get something like:
 
-![update-slack](https://user-images.githubusercontent.com/5077391/31571023-47477b16-b0d7-11e7-8f2f-334680904260.png)
+![slack-reply](https://user-images.githubusercontent.com/5077391/31571923-88310d4e-b0e7-11e7-8e2e-d3eacdac0fa6.png)
 
 Notes, Replies from Agents and System messages shouldn't appear.
