@@ -78,7 +78,7 @@ class SlackPlugin extends Plugin {
         $this->sendToSlack($ticket, $heading, $body, 'warning');
     }
 
-    function sendToSlack(Ticket $ticket, $heading, $body, $color = 'good') {
+    function sendToSlack(Ticket $ticket, $heading, $body, $colour = 'good') {
         global $ost, $cfg;
         if (!$ost instanceof osTicket || !$cfg instanceof OsticketConfig) {
             error_log("Slack plugin called too early.");
