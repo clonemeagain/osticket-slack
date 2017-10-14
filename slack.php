@@ -39,7 +39,8 @@ class SlackPlugin extends Plugin {
                 , $ticket->getSource()
                 , __('on')
                 , strtotime($ticket->getCreateDate())
-                , $ticket->getCreateDate());
+                , $ticket->getCreateDate()
+                , "\n\n" . $ticket->getMessages()[0]->getBody()->getClean());
         $this->sendToSlack($ticket, $msg, $body);
     }
 
@@ -54,13 +55,19 @@ class SlackPlugin extends Plugin {
             return;
         }
         $ticket = $this->getTicket($entry);
-        $msg    = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+        $first_entry = $ticket->getMessages()[0];
+        if ($entry->getId() == $first_entry->getId()) {
+            // don't post the same thing twice.. let the onCreated handle it.
+            return;
+        }
+
+        $msg  = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
                 , __("Ticket")
                 , $cfg->getBaseUrl()
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("updated"));
-        $body   = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
+        $body = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
                 , __("by")
                 , $entry->getPoster()
                 , $ticket->getEmail()
@@ -70,8 +77,8 @@ class SlackPlugin extends Plugin {
                 , __('via')
                 , $ticket->getSource()
                 , __('on')
-                , strtotime($entry->getUpdateDate())
-                , $entry->getUpdateDate()
+                , strtotime($entry->getCreateDate())
+                , $entry->getCreateDate()
                 , "\n\n" . $entry->getBody()->getClean());
         $this->sendToSlack($ticket, $msg, $body);
     }
