@@ -28,7 +28,7 @@ class SlackPlugin extends Plugin {
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("created"));
-        $body = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND'
+        $body = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
                 , __("created by")
                 , $ticket->getName()
                 , $ticket->getEmail()
