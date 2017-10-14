@@ -12,16 +12,13 @@ class SlackPlugin extends Plugin {
     var $config_class = "SlackPluginConfig";
 
     function bootstrap() {
-        Signal::connect('ticket.created', function(Ticket $ticket) {
-            $this->onTicketCreated($ticket);
-        });
+        Signal::connect('ticket.created', array($this, 'onTicketCreated'));
+        Signal::connect('threadentry.created', array($this, 'onTicketUpdated'));
     }
 
     function onTicketCreated(Ticket $ticket) {
-        $c = $this->getConfig();
-
-        global $ost, $cfg;
-        if (!$ost instanceof osTicket || !$cfg instanceof OsticketConfig) {
+        global $cfg;
+        if (!$cfg instanceof OsticketConfig) {
             error_log("Slack plugin called too early.");
             return;
         }
@@ -43,7 +40,48 @@ class SlackPlugin extends Plugin {
                 , __('on')
                 , strtotime($ticket->getCreateDate())
                 , $ticket->getCreateDate());
+        $this->sendToSlack($ticket, $msg, $body);
+    }
 
+    function onTicketUpdated(ThreadEntry $entry) {
+        global $cfg;
+        if (!$cfg instanceof OsticketConfig) {
+            error_log("Slack plugin called too early.");
+            return;
+        }
+        if (!$entry instanceof MessageThreadEntry) {
+            // this was a reply or a system entry.. not a message from a user
+            return;
+        }
+        $ticket = $this->getTicket($entry);
+        $msg    = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+                , __("Ticket")
+                , $cfg->getBaseUrl()
+                , $ticket->getId()
+                , $ticket->getNumber()
+                , __("updated"));
+        $body   = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
+                , __("by")
+                , $entry->getPoster()
+                , $ticket->getEmail()
+                , __('in')
+                , $ticket->getDeptName()
+                , __('Department')
+                , __('via')
+                , $ticket->getSource()
+                , __('on')
+                , strtotime($entry->getUpdateDate())
+                , $entry->getUpdateDate()
+                , "\n\n" . $entry->getBody()->getClean());
+        $this->sendToSlack($ticket, $msg, $body);
+    }
+
+    function sendToSlack(Ticket $ticket, $msg, $body) {
+        global $ost, $cfg;
+        if (!$ost instanceof osTicket || !$cfg instanceof OsticketConfig) {
+            error_log("Slack plugin called too early.");
+            return;
+        }
         // Obey message formatting rules:https://api.slack.com/docs/message-formatting
         $formatter     = ['<' => '&lt;', '>' => '&gt;', '&' => '&amp;'];
         $msg           = str_replace(array_keys($formatter), array_values($formatter), $msg);
@@ -52,8 +90,6 @@ class SlackPlugin extends Plugin {
         $moreformatter = ['CONTROLSTART' => '<', 'CONTROLEND' => '>'];
         $msg           = str_replace(array_keys($moreformatter), array_values($moreformatter), $msg);
         $body          = str_replace(array_keys($moreformatter), array_values($moreformatter), $body);
-        error_log("Message: $msg");
-        error_log("BODY: $body");
 
         try {
             $payload['attachments'][] = [
@@ -72,7 +108,7 @@ class SlackPlugin extends Plugin {
             ];
 
             $data_string = utf8_encode(json_encode($payload));
-            $url         = $c->get('slack-webhook-url');
+            $url         = $this->getConfig()->get('slack-webhook-url');
 
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
@@ -96,6 +132,28 @@ class SlackPlugin extends Plugin {
             $ost->logError('Slack posting issue!', $e->getMessage(), true);
             error_log('Error posting to Slack. ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Fetches a ticket from a ThreadEntry
+     *
+     * @param ThreadEntry $entry        	
+     * @return Ticket
+     */
+    private static function getTicket(ThreadEntry $entry) {
+        static $ticket;
+        if (!$ticket) {
+            // aquire ticket from $entry.. I suspect there is a more efficient way.
+            $ticket_id = Thread::objects()->filter([
+                        'id' => $entry->getThreadId()
+                    ])->values_flat('object_id')->first() [0];
+
+            // Force lookup rather than use cached data..
+            $ticket = Ticket::lookup(array(
+                        'ticket_id' => $ticket_id
+            ));
+        }
+        return $ticket;
     }
 
 }

@@ -35,6 +35,12 @@ You should also receive an email from Slack telling you about the new Integratio
 ## Test!
 Create a ticket!
 
-You should see something like:
+You should see something like the following appear in your Slack channel:
 
 ![slack](https://user-images.githubusercontent.com/5077391/31570760-2a5bec20-b0d3-11e7-9429-c25e8cdcf328.png)
+
+When a user replies, you'll get something like:
+
+![update-slack](https://user-images.githubusercontent.com/5077391/31571023-47477b16-b0d7-11e7-8f2f-334680904260.png)
+
+Notes, Replies from Agents and System messages shouldn't appear.
