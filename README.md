@@ -45,7 +45,8 @@ When a user replies, you'll get something like:
 
 ![slack-reply](https://user-images.githubusercontent.com/5077391/31572648-9279eb18-b0f6-11e7-97da-9a9c63a200d4.png)
 
-Notes, Replies from Agents and System messages shouldn't appear.
+Notes, Replies from Agents and System messages shouldn't appear, usernames are links to the user's page 
+in osTicket, the Ticket subject is a link to the ticket, as is the ticket ID. 
 
 ## Adding pull's from original repo:
  +0.2 - 17 december 2016
