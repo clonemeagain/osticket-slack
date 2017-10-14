@@ -26,6 +26,8 @@ This plugin uses CURL and tested on osTicket-1.10.1
 - Select "Authorize"
 - Scroll down and copy the Webhook URL entirely, paste this into the Plugin config.
 
+If you want to add the Department as a field in each slack notice, tick the Checkbox in the Plugin config.
+
 The channel you select will receive an event notice, like:
 ```
 Aaron [10:56 AM] added an integration to this channel: osTicket Notification
@@ -37,10 +39,10 @@ Create a ticket!
 
 You should see something like the following appear in your Slack channel:
 
-![slack-new-ticket](https://user-images.githubusercontent.com/5077391/31572028-5b8f69ce-b0e8-11e7-86f0-d5a4cef2b98e.png)
+![slack-new-ticket](https://user-images.githubusercontent.com/5077391/31572647-923e07b0-b0f6-11e7-9515-98205d6f800f.png)
 
 When a user replies, you'll get something like:
 
-![slack-reply](https://user-images.githubusercontent.com/5077391/31572029-5d1144e8-b0e8-11e7-9fad-cc5204b0ca64.png)
+![slack-reply](https://user-images.githubusercontent.com/5077391/31572648-9279eb18-b0f6-11e7-97da-9a9c63a200d4.png)
 
 Notes, Replies from Agents and System messages shouldn't appear.

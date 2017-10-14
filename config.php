@@ -35,6 +35,10 @@ class SlackPluginConfig extends PluginConfig {
                     'length' => 200
                 ),
                     )),
+            'display-dept'      => new BooleanField([
+                'label'   => $__('Add field for Department in Slack notice'),
+                'default' => FALSE,
+                    ])
         );
     }
 
