@@ -22,26 +22,23 @@ class SlackPlugin extends Plugin {
             error_log("Slack plugin called too early.");
             return;
         }
-        $msg  = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+
+        // Convert any HTML in the message into text
+        $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
+
+        $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%s - %sCONTROLEND %s'
                 , __("New Ticket")
                 , $cfg->getBaseUrl()
                 , $ticket->getId()
                 , $ticket->getNumber()
+                , $ticket->getSubject()
                 , __("created"));
-        $body = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
-                , __("created by")
+        $body    = sprintf('%s %s (%s) %s'
+                , __("Created by")
                 , $ticket->getName()
                 , $ticket->getEmail()
-                , __('in')
-                , $ticket->getDeptName()
-                , __('Department')
-                , __('via')
-                , $ticket->getSource()
-                , __('on')
-                , strtotime($ticket->getCreateDate())
-                , $ticket->getCreateDate()
-                , "\n\n" . $ticket->getMessages()[0]->getBody()->getClean());
-        $this->sendToSlack($ticket, $msg, $body);
+                , "\n\n" . $plaintext);
+        $this->sendToSlack($ticket, $heading, $body);
     }
 
     function onTicketUpdated(ThreadEntry $entry) {
@@ -54,64 +51,66 @@ class SlackPlugin extends Plugin {
             // this was a reply or a system entry.. not a message from a user
             return;
         }
-        $ticket = $this->getTicket($entry);
+        $ticket      = $this->getTicket($entry);
         $first_entry = $ticket->getMessages()[0];
         if ($entry->getId() == $first_entry->getId()) {
-            // don't post the same thing twice.. let the onCreated handle it.
+            // don't post the same thing twice.. let onCreated handle it.
             return;
         }
 
-        $msg  = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+        // Convert any HTML in the message into text
+        $plaintext = Format::html2text($entry->getBody()->getClean());
+
+        $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%s %sCONTROLEND %s'
                 , __("Ticket")
                 , $cfg->getBaseUrl()
                 , $ticket->getId()
                 , $ticket->getNumber()
+                , $ticket->getSubject()
                 , __("updated"));
-        $body = sprintf('%s %s (%s) %s %s (%s) %s %s %s CONTROLSTART!date^%d^{date} {time}|%sCONTROLEND %s'
+        $body    = sprintf('%s %s (%s) %s %s %s'
                 , __("by")
                 , $entry->getPoster()
                 , $ticket->getEmail()
                 , __('in')
                 , $ticket->getDeptName()
-                , __('Department')
-                , __('via')
-                , $ticket->getSource()
-                , __('on')
-                , strtotime($entry->getCreateDate())
-                , $entry->getCreateDate()
-                , "\n\n" . $entry->getBody()->getClean());
-        $this->sendToSlack($ticket, $msg, $body);
+                , "\n\n" . $plaintext);
+        $this->sendToSlack($ticket, $heading, $body, 'warning');
     }
 
-    function sendToSlack(Ticket $ticket, $msg, $body) {
+    function sendToSlack(Ticket $ticket, $heading, $body, $color = 'good') {
         global $ost, $cfg;
         if (!$ost instanceof osTicket || !$cfg instanceof OsticketConfig) {
             error_log("Slack plugin called too early.");
             return;
         }
+
         // Obey message formatting rules:https://api.slack.com/docs/message-formatting
         $formatter     = ['<' => '&lt;', '>' => '&gt;', '&' => '&amp;'];
-        $msg           = str_replace(array_keys($formatter), array_values($formatter), $msg);
+        $heading       = str_replace(array_keys($formatter), array_values($formatter), $heading);
         $body          = str_replace(array_keys($formatter), array_values($formatter), $body);
         // put the <>'s control characters back in
         $moreformatter = ['CONTROLSTART' => '<', 'CONTROLEND' => '>'];
-        $msg           = str_replace(array_keys($moreformatter), array_values($moreformatter), $msg);
+        $heading       = str_replace(array_keys($moreformatter), array_values($moreformatter), $heading);
         $body          = str_replace(array_keys($moreformatter), array_values($moreformatter), $body);
 
         try {
             $payload['attachments'][] = [
-                'pretext'  => $msg,
-                'fallback' => $msg,
-                'color'    => "#D00000",
-                'fields'   =>
-                [
+                'pretext'     => $heading,
+                'fallback'    => $heading,
+                'color'       => $colour,
+                "author"      => $ticket->getName(),
+                "author_link" => $cfg->getBaseUrl() . 'scp/users.php?id=' . $ticket->getOwner()->getId(),
+                'ts'          => Misc::gmtime(),
+                'footer'      => __('Department') . ': ' . $ticket->getDeptName(),
+                "fields"      => [
                     [
-                        'title'  => $ticket->getSubject(),
-                        'value'  => $body,
-                        'short'  => FALSE,
-                        'mrkdwn' => false,
-                    ],
-                ],
+                        "title"      => $ticket->getSubject(),
+                        "title_link" => $cfg->getBaseUrl() . 'scp/tickets.php?id=' . $ticket->getId(),
+                        "value"      => $body,
+                        "short"      => false,
+                    ]
+                ]
             ];
 
             $data_string = utf8_encode(json_encode($payload));
