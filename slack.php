@@ -102,7 +102,7 @@ class SlackPlugin extends Plugin {
                 "author"      => $ticket->getName(),
                 "author_link" => $cfg->getBaseUrl() . 'scp/users.php?id=' . $ticket->getOwner()->getId(),
                 'ts'          => Misc::gmtime(),
-                'footer'      => __('Department') . ': ' . $ticket->getDeptName(),
+                'footer'      => __('Department') . ': ' . $ticket->getDeptName() . ' -> ' . $ticket->getTopic(),
                 "fields"      => [
                     [
                         "title"      => $ticket->getSubject(),
