@@ -20,6 +20,7 @@ class SlackPlugin extends Plugin {
         // an existing ticket:
         Signal::connect('ticket.created', array($this, 'onTicketCreated'));
         Signal::connect('threadentry.created', array($this, 'onTicketUpdated'));
+        // Tasks? Signal::connect('task.created',array($this,'onTaskCreated'));
     }
 
     /**
@@ -46,11 +47,6 @@ class SlackPlugin extends Plugin {
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("created"));
-        $body    = sprintf('%s %s (%s) %s'
-                , __("Created by")
-                , $ticket->getName()
-                , $ticket->getEmail()
-                , "\n\n" . $plaintext);
         $this->sendToSlack($ticket, $heading, $plaintext);
     }
 
@@ -84,7 +80,6 @@ class SlackPlugin extends Plugin {
         if ($entry->getId() == $first_entry->getId()) {
             return;
         }
-
         // Convert any HTML in the message into text
         $plaintext = Format::html2text($entry->getBody()->getClean());
 
@@ -95,13 +90,6 @@ class SlackPlugin extends Plugin {
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("updated"));
-        $body    = sprintf('%s %s (%s) %s %s %s'
-                , __("by")
-                , $entry->getPoster()
-                , $ticket->getEmail()
-                , __('in')
-                , $ticket->getDeptName()
-                , "\n\n" . $plaintext);
         $this->sendToSlack($ticket, $heading, $plaintext, 'warning');
     }
 
@@ -138,36 +126,30 @@ class SlackPlugin extends Plugin {
         }
 
         $heading = $this->format_text($heading);
-        $body    = $this->format_text($body);
+
+        // Pull template from config, and use that. 
+        $template          = $this->getConfig()->get('message-template');
+        // Add our custom var
+        $custom_vars       = [
+            'slack_safe_message' => $this->format_text($body),
+        ];
+        $formatted_message = $ticket->replaceVars($template, $custom_vars);
 
         // Build the payload with the formatted data:
         $payload['attachments'][0] = [
             'pretext'     => $heading,
             'fallback'    => $heading,
             'color'       => $colour,
+            // 'author'      => $ticket->getOwner(),
+            //  'author_link' => $cfg->getBaseUrl() . 'scp/users.php?id=' . $ticket->getOwnerId(),
+            // 'author_icon' => $this->get_gravatar($ticket->getEmail()),
             'title'       => $ticket->getSubject(),
             'title_link'  => $cfg->getBaseUrl() . 'scp/tickets.php?id=' . $ticket->getId(),
             'ts'          => time(),
             'footer'      => 'via osTicket Slack Plugin',
             'footer_icon' => 'https://platform.slack-edge.com/img/default_application_icon.png',
-            'text'        => $body,
-            'fields'      => [
-                [
-                    'title' => __('User'),
-                    'value' => '<' . $cfg->getBaseUrl() . 'scp/users.php?id=' . $ticket->getOwnerId() . '|' . $ticket->getName() . '> (' . $ticket->getEmail() . ')',
-                    'short' => TRUE,
-                ],
-                [
-                    'title' => __('Priority'),
-                    'value' => $ticket->getPriority(),
-                    'short' => TRUE,
-                ],
-                [
-                    'title' => __('Topic'),
-                    'value' => str_replace('/', '-', $ticket->getTopic()),
-                    'short' => TRUE,
-                ],
-            ]
+            'text'        => $formatted_message,
+            'mrkdwn_in'   => ["text"]
         ];
         // Add a field for tasks if there are open ones
         if ($ticket->getNumOpenTasks()) {
@@ -180,14 +162,6 @@ class SlackPlugin extends Plugin {
         // Change the colour to Fuschia if ticket is overdue
         if ($ticket->isOverdue()) {
             $payload['attachments'][0]['colour'] = '#ff00ff';
-        }
-
-        if ($this->getConfig()->get('display-dept')) {
-            $payload['attachments'][0]['fields'][] = [
-                'title' => __('Department'),
-                'value' => $ticket->getDeptName(),
-                'short' => TRUE,
-            ];
         }
 
         // Format the payload:
