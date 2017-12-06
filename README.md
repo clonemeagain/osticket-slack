@@ -4,6 +4,8 @@ osTicket-slack
 ==============
 An plugin for [osTicket](https://osticket.com) which posts notifications to a [Slack](https://slack.com) channel.
 
+Originally forked from: [https://github.com/thammanna/osticket-slack](https://github.com/thammanna/osticket-slack).
+
 Install
 --------
 Clone this repo or download the zip file and place the contents into your `include/plugins` folder.
