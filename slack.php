@@ -43,7 +43,7 @@ class SlackPlugin extends Plugin {
         // Format the messages we'll send.
         $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
                 , __("New Ticket")
-                , $cfg->getBaseUrl()
+                , $cfg->getUrl()
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("created"));
@@ -86,7 +86,7 @@ class SlackPlugin extends Plugin {
         // Format the messages we'll send
         $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
                 , __("Ticket")
-                , $cfg->getBaseUrl()
+                , $cfg->getUrl()
                 , $ticket->getId()
                 , $ticket->getNumber()
                 , __("updated"));
@@ -141,10 +141,10 @@ class SlackPlugin extends Plugin {
             'fallback'    => $heading,
             'color'       => $colour,
             // 'author'      => $ticket->getOwner(),
-            //  'author_link' => $cfg->getBaseUrl() . 'scp/users.php?id=' . $ticket->getOwnerId(),
+            //  'author_link' => $cfg->getUrl() . 'scp/users.php?id=' . $ticket->getOwnerId(),
             // 'author_icon' => $this->get_gravatar($ticket->getEmail()),
             'title'       => $ticket->getSubject(),
-            'title_link'  => $cfg->getBaseUrl() . 'scp/tickets.php?id=' . $ticket->getId(),
+            'title_link'  => $cfg->getUrl() . 'scp/tickets.php?id=' . $ticket->getId(),
             'ts'          => time(),
             'footer'      => 'via osTicket Slack Plugin',
             'footer_icon' => 'https://platform.slack-edge.com/img/default_application_icon.png',
