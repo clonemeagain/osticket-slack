@@ -4,6 +4,8 @@ require_once INCLUDE_DIR . 'class.plugin.php';
 
 class SlackPluginConfig extends PluginConfig {
 
+    public static $template = '%{ticket.name.full} (%{ticket.email}) in *%{ticket.dept}* _%{ticket.topic}_\n\n```%{slack_safe_message}``` ';
+
     // Provide compatibility function for versions of osTicket prior to
     // translation support (v1.9.4)
     function translate() {
@@ -25,6 +27,21 @@ class SlackPluginConfig extends PluginConfig {
             $errors['err'] = 'Your regex was invalid, try something like "spam", it will become: "/spam/i" when we use it.';
             return FALSE;
         }
+        if (!$config['notify-new'] && !$config['notify-replies']) {
+            $errors['err'] = 'You will not get any notifications.. might as well disable the plugin mate.';
+            return false;
+        }
+
+
+        if (!$config['slack-webhook-url']) {
+            $errors['err'] = 'You need to view the Readme and configure the Slack Webhook URL before using this';
+            return false;
+        }
+
+        if (!extension_loaded('curl')) {
+            $errors['err'] = 'PHP curl extension missing, You need to install and enable the php_curl extension before we can use it to send notifications.';
+            return false;
+        }
         return TRUE;
     }
 
@@ -43,6 +60,16 @@ class SlackPluginConfig extends PluginConfig {
                     'length' => 200
                 ),
                     )),
+            'notify-new'                 => new BooleanField([
+                'label'   => $__('Notify on New Ticket'),
+                'hint'    => $__('Send a slack notification to the above webhook whenever a new ticket is created.'),
+                'default' => TRUE,
+                    ]),
+            'notify-replies'             => new BooleanField([
+                'label'   => $__('Notify on Reply'),
+                'hint'    => $__('Send a slack notification to the above webhook whenever a ticket is replied to by a user.'),
+                'default' => TRUE,
+                    ]),
             'slack-regex-subject-ignore' => new TextboxField([
                 'label'         => $__('Ignore when subject equals regex'),
                 'hint'          => $__('Auto delimited, always case-insensitive'),
@@ -55,7 +82,7 @@ class SlackPluginConfig extends PluginConfig {
                 'label'         => $__('Message Template'),
                 'hint'          => $__('The main text part of the Slack message, uses Ticket Variables, for what the user typed, use variable: %{slack_safe_message}'),
                 // "<%{url}/scp/tickets.php?id=%{ticket.id}|%{ticket.subject}>\n" // Already included as Title
-                'default'       => "%{ticket.name.full} (%{ticket.email}) in *%{ticket.dept}* _%{ticket.topic}_\n\n```%{slack_safe_message}```",
+                'default'       => self::$template,
                 'configuration' => [
                     'html' => FALSE,
                 ]
