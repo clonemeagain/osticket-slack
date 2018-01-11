@@ -59,7 +59,7 @@ class SlackPlugin extends Plugin {
             $error = true;
         }
 
-        if (!$plugin_config->get('message-template')) {
+        if (!strlen($plugin_config->get('message-template'))) {
             $this->ost->logInfo('Slack: Regenerating message template', 'It was missing/empty in the plugin config, reverting to default.');
             $this->getConfig()->set('message-template', SlackPluginConfig::$template);
         }
@@ -81,21 +81,27 @@ class SlackPlugin extends Plugin {
             return;
         }
 
+        try {
 // Convert any HTML in the message into text
-        $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
+            $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
 
-        if (!$plaintext) {
-            $plaintext = '[empty]';
-        }
+            if (!$plaintext) {
+                $plaintext = '[empty]';
+            }
 
 // Format the messages we'll send.
-        $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
-                , __("New Ticket")
-                , $this->cfg->getUrl()
-                , $ticket->getId()
-                , $ticket->getNumber()
-                , __("created"));
-        $this->sendToSlack($ticket, $heading, $plaintext);
+            $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+                    , __("New Ticket")
+                    , $this->cfg->getUrl()
+                    , $ticket->getId()
+                    , $ticket->getNumber()
+                    , __("created"));
+            $this->ost->logDebug("Slack Sending...", $heading . "\n" . $plaintext);
+            $this->sendToSlack($ticket, $heading, $plaintext);
+        } catch (Exception $e) {
+            $this->ost->logError("Slack: Exception encountered!", sprintf("New ticket error for ticket_id: %s\n%s", $ticket->getId(), $e->getMessage));
+            $this->ost->logDebug("Slack Trace", $e->getTraceAsString());
+        }
     }
 
     /**
@@ -132,21 +138,28 @@ class SlackPlugin extends Plugin {
             $this->ost->logDebug("Slack ignoring message", "Because we don't want to notify twice on new Tickets");
             return;
         }
-// Convert any HTML in the message into text
-        $plaintext = Format::html2text($entry->getBody()->getClean());
 
-        if (!$plaintext) {
-            $plaintext = '[empty]';
-        }
+        try {
+// Convert any HTML in the message into text
+            $plaintext = Format::html2text($entry->getBody()->getClean());
+
+            if (!$plaintext) {
+                $plaintext = '[empty]';
+            }
 
 // Format the messages we'll send
-        $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
-                , __("Ticket")
-                , $this->cfg->getUrl()
-                , $ticket->getId()
-                , $ticket->getNumber()
-                , __("updated"));
-        $this->sendToSlack($ticket, $heading, $plaintext, 'warning');
+            $heading = sprintf('%s CONTROLSTART%sscp/tickets.php?id=%d|#%sCONTROLEND %s'
+                    , __("Ticket")
+                    , $this->cfg->getUrl()
+                    , $ticket->getId()
+                    , $ticket->getNumber()
+                    , __("updated"));
+            $this->ost->logDebug("Slack Sending...", $heading . "\n" . $plaintext);
+            $this->sendToSlack($ticket, $heading, $plaintext, 'warning');
+        } catch (Exception $e) {
+            $this->ost->logError("Slack: Exception encountered!", sprintf("Reply to ticket error for ticket_id: %s\n%s", $ticket->getId(), $e->getMessage), false);
+            $this->ost->logDebug("Slack Trace", $e->getTraceAsString());
+        }
     }
 
     /**
@@ -166,23 +179,20 @@ class SlackPlugin extends Plugin {
         $regex_subject_ignore = $this->getConfig()->get('slack-regex-subject-ignore');
 // Filter on subject, and validate regex:
         if ($regex_subject_ignore && preg_match("/$regex_subject_ignore/i", $ticket->getSubject())) {
-            $this->ost->logDebug('Slac Ignored Message', 'Slack notification was not sent because the subject (' . $ticket->getSubject() . ') matched regex (' . htmlspecialchars($regex_subject_ignore) . ').');
+            $this->ost->logDebug('Slack Ignored Message', 'Slack notification was not sent because the subject (' . $ticket->getSubject() . ') matched regex (' . htmlspecialchars($regex_subject_ignore) . ').');
             return;
         }
-        elseif ($regex_subject_ignore) {
-            $this->ost->logDebug("Slack Ignore Filter miss", "$ticket_subject didn't trigger $regex_subject_ignore");
-        }
 
-        $formatted_heading = $this->format_text($heading);
+        $formatted_heading = $this->slack_text_formatter($heading);
         if (!$formatted_heading) {
             $formatted_heading = '[heading text missing]';
         }
 
 // Pull template from config, and use that. 
-        $template          = $this->getConfig()->get('message-template');
-// Add our custom variables
+        $template          = $this->getConfig()->get('message-template') ?: SlackPluginConfig::$template;
+// Add our custom variables to an array 
         $custom_vars       = [
-            'slack_safe_message' => $this->format_text($body),
+            'slack_safe_message' => $this->slack_text_formatter($body),
         ];
 // process using the ticket's variable replacer, thereby inheriting all ticket contextually available variables.
         $formatted_message = $ticket->replaceVars($template, $custom_vars);
@@ -301,32 +311,13 @@ class SlackPlugin extends Plugin {
     }
 
     /**
-     * Fetches a ticket from a ThreadEntry
-     *
-     * @param ThreadEntry $entry        	
-     * @return Ticket
-     */
-    function getTicket(ThreadEntry $entry) {
-        $ticket_id = Thread::objects()->filter([
-                    'id' => $entry->getThreadId()
-                ])->values_flat('object_id')->first() [0];
-
-// Force lookup rather than use cached data..
-// This ensures we get the full ticket, with all
-// thread entries etc.. 
-        return Ticket::lookup(array(
-                    'ticket_id' => $ticket_id
-        ));
-    }
-
-    /**
      * Formats text according to the Slack
      * formatting rules:https://api.slack.com/docs/message-formatting
      * 
      * @param string $text
      * @return string
      */
-    function format_text($text) {
+    function slack_text_formatter($text) {
         $formatter      = [
             '<' => '&lt;',
             '>' => '&gt;',
@@ -340,31 +331,6 @@ class SlackPlugin extends Plugin {
         ];
 // Replace the CONTROL characters, and limit text length to 500 characters.
         return substr(str_replace(array_keys($moreformatter), array_values($moreformatter), $formatted_text), 0, 500);
-    }
-
-    /**
-     * Get either a Gravatar URL or complete image tag for a specified email address.
-     *
-     * @param string $email The email address
-     * @param string $s Size in pixels, defaults to 80px [ 1 - 2048 ]
-     * @param string $d Default imageset to use [ 404 | mm | identicon | monsterid | wavatar ]
-     * @param string $r Maximum rating (inclusive) [ g | pg | r | x ]
-     * @param boole $img True to return a complete IMG tag False for just the URL
-     * @param array $atts Optional, additional key/value attributes to include in the IMG tag
-     * @return String containing either just a URL or a complete image tag
-     * @source https://gravatar.com/site/implement/images/php/
-     */
-    function get_gravatar($email, $s = 80, $d = 'mm', $r = 'g', $img = false, $atts = array()) {
-        $url = 'https://www.gravatar.com/avatar/';
-        $url .= md5(strtolower(trim($email)));
-        $url .= "?s=$s&d=$d&r=$r";
-        if ($img) {
-            $url = '<img src="' . $url . '"';
-            foreach ($atts as $key => $val)
-                $url .= ' ' . $key . '="' . $val . '"';
-            $url .= ' />';
-        }
-        return $url;
     }
 
     /**
@@ -403,6 +369,26 @@ class SlackPlugin extends Plugin {
         $this->curl_me($url, $data_string, $new_payload);
     }
 
+    //******* Plugin Utility functions 
+    /**
+     * Fetches a ticket from a ThreadEntry
+     *
+     * @param ThreadEntry $entry        	
+     * @return Ticket
+     */
+    function getTicket(ThreadEntry $entry) {
+        $ticket_id = Thread::objects()->filter([
+                    'id' => $entry->getThreadId()
+                ])->values_flat('object_id')->first() [0];
+
+// Force lookup rather than use cached data..
+// This ensures we get the full ticket, with all
+// thread entries etc.. 
+        return Ticket::lookup(array(
+                    'ticket_id' => $ticket_id
+        ));
+    }
+
     /**
      * Required stub.
      *
@@ -410,7 +396,8 @@ class SlackPlugin extends Plugin {
      *
      * @see Plugin::uninstall()
      */
-    function uninstall(&$errors) {
+    function uninstall() {
+        $errors = array();
         parent::uninstall($errors);
     }
 

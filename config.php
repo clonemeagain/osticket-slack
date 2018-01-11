@@ -4,7 +4,7 @@ require_once INCLUDE_DIR . 'class.plugin.php';
 
 class SlackPluginConfig extends PluginConfig {
 
-    public static $template = '%{ticket.name.full} (%{ticket.email}) in *%{ticket.dept}* _%{ticket.topic}_\n\n```%{slack_safe_message}``` ';
+    public static $template = "%{ticket.name.full} (%{ticket.email}) in *%{ticket.dept}* _%{ticket.topic}_\n\n```%{slack_safe_message}```";
 
     // Provide compatibility function for versions of osTicket prior to
     // translation support (v1.9.4)
@@ -24,7 +24,7 @@ class SlackPluginConfig extends PluginConfig {
 
     function pre_save($config, &$errors) {
         if ($config['slack-regex-subject-ignore'] && false === @preg_match("/{$config['slack-regex-subject-ignore']}/i", null)) {
-            $errors['err'] = 'Your regex was invalid, try something like "spam", it will become: "/spam/i" when we use it.';
+            $errors['err'] = 'Your regex was invalid, try something like "spam", it will become: "/spam/i" when we use it, or leave empty for no filter.';
             return FALSE;
         }
         if (!$config['notify-new'] && !$config['notify-replies']) {
