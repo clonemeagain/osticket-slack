@@ -85,6 +85,8 @@ class SlackPlugin extends Plugin {
 // Convert any HTML in the message into text
             $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
 
+            $colour = $this->getConfig('nm-colour') ?: 'good';
+
             if (!$plaintext) {
                 $plaintext = '[empty]';
             }
@@ -97,11 +99,37 @@ class SlackPlugin extends Plugin {
                     , $ticket->getNumber()
                     , __("created"));
             $this->ost->logDebug("Slack Sending...", $heading . "\n" . $plaintext);
-            $this->sendToSlack($ticket, $heading, $plaintext);
+            $this->sendToSlack($ticket, $heading, $plaintext, $colour);
         } catch (Exception $e) {
             $this->ost->logError("Slack: Exception encountered!", sprintf("New ticket error for ticket_id: %s\n%s", $ticket->getId(), $e->getMessage));
             $this->ost->logDebug("Slack Trace", $e->getTraceAsString());
         }
+    }
+
+    /**
+     * Basically, the onTicketUpdated thread was getting long
+     * 
+     * @param ThreadEntry $entry
+     * @param PluginConfig $config
+     * @return boolean|string
+     */
+    private function getColour($entry, $config) {
+        // Setup what types of messages we'll pass through to slack, defaults to just user-messages:
+        if ($config->get('post-user-messages') && $entry instanceof MessageThreadEntry) {
+            // User messages always? 
+            return $config->get('um-colour') ?: 'warning';
+        }
+
+// See if the admin has allowed Agent responses to be posted to Slack:
+        elseif ($config->get('post-agent-messages') && $entry instanceof ResponseThreadEntry) {
+            return $config->get('am-colour') ?: '#439FE0'; // a blue colour
+        }
+
+// See if System messages should be posted, good for "Overdue" type messages:
+        elseif ($config->get('post-system-messages')) {
+            return $config->get('sm-colour') ?: 'danger';
+        }
+        return FALSE;
     }
 
     /**
@@ -112,17 +140,23 @@ class SlackPlugin extends Plugin {
      * @return type
      */
     function onTicketUpdated(ThreadEntry $entry) {
-        if ($this->validate_install($this->getConfig())) {
+        $config = $this->getConfig();
+
+        if ($this->validate_install($config)) {
 // bail before attempting to send things
             error_log("Slack plugin not ready, No notifications will be attempted until setup is completed.");
             return;
         }
 
-        if (!$entry instanceof MessageThreadEntry) {
-// this was a reply or a system entry.. not a message from a user
-            $this->ost->logDebug("Slack Ignoring message", "Because it is not from a user.");
+// Fetch the colour for the post
+        $colour = $this->getColour($entry, $config);
+
+        if ($colour === FALSE) {
+// Response was not selected for slack notification by admin... 
+            $this->ost->logDebug("Slack Ignoring message", "You can use the plugin config to enable this type of notice if desired.");
             return;
         }
+
 
 // Need to fetch the ticket from the ThreadEntry
         $ticket = $this->getTicket($entry);
@@ -155,7 +189,7 @@ class SlackPlugin extends Plugin {
                     , $ticket->getNumber()
                     , __("updated"));
             $this->ost->logDebug("Slack Sending...", $heading . "\n" . $plaintext);
-            $this->sendToSlack($ticket, $heading, $plaintext, 'warning');
+            $this->sendToSlack($ticket, $heading, $plaintext, $colour);
         } catch (Exception $e) {
             $this->ost->logError("Slack: Exception encountered!", sprintf("Reply to ticket error for ticket_id: %s\n%s", $ticket->getId(), $e->getMessage), false);
             $this->ost->logDebug("Slack Trace", $e->getTraceAsString());
@@ -371,7 +405,7 @@ class SlackPlugin extends Plugin {
 
     //******* Plugin Utility functions 
     /**
-     * Fetches a ticket from a ThreadEntry
+     * Find the ticket from the database which ThreadEntry $entry relates to
      *
      * @param ThreadEntry $entry        	
      * @return Ticket

@@ -65,11 +65,43 @@ class SlackPluginConfig extends PluginConfig {
                 'hint'    => $__('Send a slack notification to the above webhook whenever a new ticket is created.'),
                 'default' => TRUE,
                     ]),
+            'nm-colour'                  => new TextboxField([
+                'label'   => $__('New Message Colour'),
+                'hint'    => 'https://api.slack.com/docs/message-attachments#color',
+                'default' => 'good',
+                    ]),
             'notify-replies'             => new BooleanField([
                 'label'   => $__('Notify on Reply'),
                 'hint'    => $__('Send a slack notification to the above webhook whenever a ticket is replied to by a user.'),
                 'default' => TRUE,
                     ]),
+            'ar-colour'                  => new TextboxField([
+                'label'   => $__('Agent Reply colour'),
+                'default' => '#000000',
+                'hint'    => 'black-ish',
+                    ]),
+            'post-user-messages'         => new BooleanField([
+                'label'   => $__('Notify on User Replies to tickets'),
+                'default' => TRUE]),
+            'um-colour'                  => new TextboxField([
+                'label'   => $__('User Reply Colour'),
+                'default' => 'warning',
+                'hint'    => 'yellow-ish']),
+            'post-agent-messages'        => new BooleanField([
+                'label'   => $__('Notify on Agent Replies to tickets'),
+                'default' => FALSE]),
+            'am-colour'                  => new TextboxField([
+                'label'   => $__('Agent Reply Colour'),
+                'default' => '#439FE0',
+                'hint'    => 'blue-ish']),
+            'post-system-messages'       => new BooleanField([
+                'label'   => $__('Notify on System messages'),
+                'default' => FALSE,
+                'hint'    => $__('Overdue, status change, transfers etc')]),
+            'sm-colour'                  => new TextboxField([
+                'label'   => $__('System Message Colour'),
+                'hint'    => 'red-ish',
+                'default' => 'danger']),
             'slack-regex-subject-ignore' => new TextboxField([
                 'label'         => $__('Ignore when subject equals regex'),
                 'hint'          => $__('Auto delimited, always case-insensitive'),
