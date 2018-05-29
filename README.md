@@ -6,19 +6,24 @@ An plugin for [osTicket](https://osticket.com) which posts notifications to a [S
 
 Originally forked from: [https://github.com/thammanna/osticket-slack](https://github.com/thammanna/osticket-slack).
 
-Install
---------
-Clone this repo or download the zip file and place the contents into your `include/plugins` folder.
-
 Info
 ------
-This plugin uses CURL and tested on osTicket-1.10.1
+This plugin uses CURL and was designed/tested with osTicket-1.10.1
 
 ## Requirements
 - php_curl
 - A slack account
 
-## To Install into Slack 
+## Install
+--------
+1. Clone this repo or download the zip file and place the contents into your `include/plugins` folder.
+1. Now the plugin needs to be enabled & configured, so login to osTicket, select "Admin Panel" then "Manage -> Plugins" you should be seeing the list of currently installed plugins.
+1. Click on `Slack Notifier` and paste your Slack Endpoint URL into the box (Slack setup instructions below). 
+1. Click `Save Changes`! (If you get an error about curl, you will need to install the Curl module for PHP). 
+1. After that, go back to the list of plugins and tick the checkbox next to "Slack Notifier" and select the "Enable" button.
+
+
+## Slack Setup:
 - Navigate to https://api.slack.com/ select "Start Building"
 - Name your App `osTicket Notification`, select your Workspace from the drop-down
 - Select "Incoming Webhooks"
@@ -26,7 +31,7 @@ This plugin uses CURL and tested on osTicket-1.10.1
 - Scroll to the bottom and select "Add a new Webhook to Workspace"
 - Select the endpoint of the webhook, (ie, channel to post to)
 - Select "Authorize"
-- Scroll down and copy the Webhook URL entirely, paste this into the Plugin config.
+- Scroll down and copy the Webhook URL entirely, paste this into the `osTicket -> Admin -> Plugin -> Slack` config admin screen.
 
 If you want to add the Department as a field in each slack notice, tick the Checkbox in the Plugin config.
 
