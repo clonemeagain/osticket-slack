@@ -41,6 +41,18 @@ Aaron [10:56 AM] added an integration to this channel: osTicket Notification
 ```
 You should also receive an email from Slack telling you about the new Integration.
 
+
+## Discord Setup:
+Note: This works very well, but may not be as smooth as Slack is natively.
+
+- Open Discord
+- Right-click on the channel you wish to send the notifications too
+- Select "Webhooks"
+- Create a Webhook by clicking 'Create Webhook'
+- Scroll down to the bottom and copy the Webhook URL in it's entireity
+- Go to the `osTicket -> Admin -> Plugin -> Slack` config admin screen and paste the URL, at the end add `/slack`
+- Example: https://discordapp.com/api/webhooks/{webhook.id}/{webhook.token}/slack
+
 ## Test!
 Create a ticket!
 
