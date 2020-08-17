@@ -237,7 +237,7 @@ class SlackPlugin extends Plugin {
             'CONTROLEND'   => '>'
         ];
         // Replace the CONTROL characters, and limit text length to 500 characters.
-        return substr(str_replace(array_keys($moreformatter), array_values($moreformatter), $formatted_text), 0, 500);
+        return mb_substr(str_replace(array_keys($moreformatter), array_values($moreformatter), $formatted_text), 0, 500);
     }
 
     /**
