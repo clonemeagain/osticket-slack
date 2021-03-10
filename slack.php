@@ -16,10 +16,17 @@ class SlackPlugin extends Plugin {
      * The entrypoint of the plugin, keep short, always runs.
      */
     function bootstrap() {
+        $updateTypes = $this->getConfig()->get('slack-update-types');
+        
         // Listen for osTicket to tell us it's made a new ticket or updated
         // an existing ticket:
-        Signal::connect('ticket.created', array($this, 'onTicketCreated'));
-        Signal::connect('threadentry.created', array($this, 'onTicketUpdated'));
+        if($updateTypes == 'both' || $updateTypes == 'newOnly' || empty($updateTypes)) {
+            Signal::connect('ticket.created', array($this, 'onTicketCreated'));
+        }
+        
+        if($updateTypes == 'both' || $updateTypes == 'updatesOnly' || empty($updateTypes)) {
+            Signal::connect('threadentry.created', array($this, 'onTicketUpdated'));
+        }
         // Tasks? Signal::connect('task.created',array($this,'onTaskCreated'));
     }
 
@@ -36,6 +43,9 @@ class SlackPlugin extends Plugin {
             error_log("Slack plugin called too early.");
             return;
         }
+        
+        // if slack-update-types is "updatesOnly", then don't send this!
+        if($this->getConfig()->get('slack-update-types') == 'updatesOnly') {return;}
 
         // Convert any HTML in the message into text
         $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
@@ -63,6 +73,10 @@ class SlackPlugin extends Plugin {
             error_log("Slack plugin called too early.");
             return;
         }
+        
+        // if slack-update-types is "newOnly", then don't send this!
+        if($this->getConfig()->get('slack-update-types') == 'newOnly') {return;}
+        
         if (!$entry instanceof MessageThreadEntry) {
             // this was a reply or a system entry.. not a message from a user
             return;

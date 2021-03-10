@@ -51,6 +51,16 @@ class SlackPluginConfig extends PluginConfig {
                     'length' => 200
                 ],
                     ]),
+            'slack-update-types' => new ChoiceField([
+                'label'         => $__('Update Types'),
+                'hint'          => $__('What types of updates should be sent via Slack?'),
+                'choices' => array('both' => 'New & Updated Tickets', 'updatesOnly' => 'Only Ticket Updates', 'newOnly' => 'Only New Tickets'),
+                'default' => 'both',
+                'configuration' => [
+                    'size'   => 30,
+                    'length' => 200
+                ],
+                    ]),
             'message-template'           => new TextareaField([
                 'label'         => $__('Message Template'),
                 'hint'          => $__('The main text part of the Slack message, uses Ticket Variables, for what the user typed, use variable: %{slack_safe_message}'),
