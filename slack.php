@@ -125,20 +125,19 @@ class SlackPlugin extends Plugin {
             return;
         }
 		
-		$webhooks = array( 
-			"Support / IT-Engineer" => "WEBHOOK_URL_HERE",
-			"Support / IT-NSE" => "WEBHOOK_URL_HERE",
-			"Support / IT-Interns" => "WEBHOOK_URL_HERE",
-			"Support / IT-Technicians" => "WEBHOOK_URL_HERE"
-		);
-		
 		$tteam = $ticket->getDeptName();
 	
-		if(!array_key_exists($tteam, $webhooks)){
-			$url = $this->getConfig()->get('slack-webhook-url');
-		}else{
-			$url = $webhooks[$tteam];
-		}
+        if($tteam == "Support / IT-NSE") {
+            $url = $this->getConfig()->get('slack-webhook-it-nse');
+        }elseif($tteam == "Support / IT-Engineer"){
+            $url = $this->getConfig()->get('slack-webhook-it-engineer');
+        }elseif($tteam == "Support / IT-Technicians"){
+            $url = $this->getConfig()->get('slack-webhook-it-technician');
+        }elseif($tteam == "Support / IT-Interns"){
+            $url = $this->getConfig()->get('slack-webhook-it-intern');
+        }else{
+            $url = $this->getConfig()->get('slack-webhook-url');
+        }
        
         if (!$url) {
             $ost->logError('Slack Plugin not configured', 'You need to read the Readme and configure a webhook URL before using this.');
