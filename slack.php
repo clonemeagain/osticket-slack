@@ -124,7 +124,22 @@ class SlackPlugin extends Plugin {
             error_log("Slack plugin called too early.");
             return;
         }
-        $url = $this->getConfig()->get('slack-webhook-url');
+		
+		$webhooks = array( 
+			"IT-Engineer" => "WEBHOOK_URL_HERE",
+			"IT-NSE" => "WEBHOOK_URL_HERE",
+			"IT-Interns" => "WEBHOOK_URL_HERE",
+			"IT-Technicians" => "WEBHOOK_URL_HERE"
+		);
+		
+		$tteam = $ticket->getDeptName();
+		
+		if(!array_key_exists($tteam, $webhooks){
+			$url = $this->getConfig()->get('slack-webhook-url');
+		}else{
+			$url = $webhooks[$tteam];
+		}
+       
         if (!$url) {
             $ost->logError('Slack Plugin not configured', 'You need to read the Readme and configure a webhook URL before using this.');
         }
