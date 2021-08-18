@@ -133,8 +133,7 @@ class SlackPlugin extends Plugin {
 		);
 		
 		$tteam = $ticket->getDeptName();
-		$ost->logError('Slack posting webhook notify!', "Trying to send ticket info to following team".$tteam, true);
-		
+	
 		if(!array_key_exists($tteam, $webhooks)){
 			$url = $this->getConfig()->get('slack-webhook-url');
 		}else{
