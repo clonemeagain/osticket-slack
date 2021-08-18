@@ -126,10 +126,10 @@ class SlackPlugin extends Plugin {
         }
 		
 		$webhooks = array( 
-			"IT-Engineer" => "WEBHOOK_URL_HERE",
-			"IT-NSE" => "WEBHOOK_URL_HERE",
-			"IT-Interns" => "WEBHOOK_URL_HERE",
-			"IT-Technicians" => "WEBHOOK_URL_HERE"
+			"Support / IT-Engineer" => "WEBHOOK_URL_HERE",
+			"Support / IT-NSE" => "WEBHOOK_URL_HERE",
+			"Support / IT-Interns" => "WEBHOOK_URL_HERE",
+			"Support / IT-Technicians" => "WEBHOOK_URL_HERE"
 		);
 		
 		$tteam = $ticket->getDeptName();
