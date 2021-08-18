@@ -134,7 +134,7 @@ class SlackPlugin extends Plugin {
 		
 		$tteam = $ticket->getDeptName();
 		
-		if(!array_key_exists($tteam, $webhooks){
+		if(!array_key_exists($tteam, $webhooks)){
 			$url = $this->getConfig()->get('slack-webhook-url');
 		}else{
 			$url = $webhooks[$tteam];
