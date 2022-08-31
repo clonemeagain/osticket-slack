@@ -20,7 +20,7 @@ class SlackPluginConfig extends PluginConfig {
         return Plugin::translate('slack');
     }
 
-    function pre_save($config, &$errors) {
+    function pre_save(&$config, &$errors) {
         if ($config['slack-regex-subject-ignore'] && false === @preg_match("/{$config['slack-regex-subject-ignore']}/i", null)) {
             $errors['err'] = 'Your regex was invalid, try something like "spam", it will become: "/spam/i" when we use it.';
             return FALSE;
