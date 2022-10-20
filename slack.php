@@ -12,11 +12,23 @@ class SlackPlugin extends Plugin {
 
     var $config_class = "SlackPluginConfig";
 
+    static $pluginInstance = null;
+
+    private function getPluginInstance(?int $id) {
+        if($id && ($i = $this->getInstance($id)))
+            return $i;
+
+        return $this->getInstances()->first();
+    }
+
     /**
      * The entrypoint of the plugin, keep short, always runs.
      */
     function bootstrap() {
-        $updateTypes = $this->getConfig()->get('slack-update-types');
+        // get plugin instances
+        self::$pluginInstance = self::getPluginInstance(null);
+
+        $updateTypes = $this->getConfig(self::$pluginInstance)->get('slack-update-types');
         
         // Listen for osTicket to tell us it's made a new ticket or updated
         // an existing ticket:
@@ -45,7 +57,7 @@ class SlackPlugin extends Plugin {
         }
         
         // if slack-update-types is "updatesOnly", then don't send this!
-        if($this->getConfig()->get('slack-update-types') == 'updatesOnly') {return;}
+        if($this->getConfig(self::$pluginInstance)->get('slack-update-types') == 'updatesOnly') {return;}
 
         // Convert any HTML in the message into text
         $plaintext = Format::html2text($ticket->getMessages()[0]->getBody()->getClean());
@@ -75,7 +87,7 @@ class SlackPlugin extends Plugin {
         }
         
         // if slack-update-types is "newOnly", then don't send this!
-        if($this->getConfig()->get('slack-update-types') == 'newOnly') {return;}
+        if($this->getConfig(self::$pluginInstance)->get('slack-update-types') == 'newOnly') {return;}
         
         if (!$entry instanceof MessageThreadEntry) {
             // this was a reply or a system entry.. not a message from a user
@@ -124,13 +136,13 @@ class SlackPlugin extends Plugin {
             error_log("Slack plugin called too early.");
             return;
         }
-        $url = $this->getConfig()->get('slack-webhook-url');
+        $url = $this->getConfig(self::$pluginInstance)->get('slack-webhook-url');
         if (!$url) {
             $ost->logError('Slack Plugin not configured', 'You need to read the Readme and configure a webhook URL before using this.');
         }
 
         // Check the subject, see if we want to filter it.
-        $regex_subject_ignore = $this->getConfig()->get('slack-regex-subject-ignore');
+        $regex_subject_ignore = $this->getConfig(self::$pluginInstance)->get('slack-regex-subject-ignore');
         // Filter on subject, and validate regex:
         if ($regex_subject_ignore && preg_match("/$regex_subject_ignore/i", $ticket->getSubject())) {
             $ost->logDebug('Ignored Message', 'Slack notification was not sent because the subject (' . $ticket->getSubject() . ') matched regex (' . htmlspecialchars($regex_subject_ignore) . ').');
@@ -140,7 +152,7 @@ class SlackPlugin extends Plugin {
         $heading = $this->format_text($heading);
 
         // Pull template from config, and use that. 
-        $template          = $this->getConfig()->get('message-template');
+        $template          = $this->getConfig(self::$pluginInstance)->get('message-template');
         // Add our custom var
         $custom_vars       = [
             'slack_safe_message' => $this->format_text($body),
