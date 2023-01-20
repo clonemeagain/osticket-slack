@@ -8,7 +8,7 @@ Originally forked from: [https://github.com/thammanna/osticket-slack](https://gi
 
 Info
 ------
-This plugin uses CURL and was designed/tested with osTicket-1.10.1
+This plugin uses CURL and was tested with osTicket-1.17.2
 
 ## Requirements
 - php_curl
